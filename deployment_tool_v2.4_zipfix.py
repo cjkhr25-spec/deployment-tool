@@ -30,91 +30,85 @@ RESULT_CSV_FILE = "deployment_result.csv"
 class DeploymentToolApp:
     def __init__(self, root):
         self.root = root
-        self.root.title("🚀 체험웹 자동 배포 시스템 v3.0")
-        self.root.geometry("920x860")
-        self.root.minsize(900, 820)
-        self.root.configure(bg="#F3F4F6")
+        self.root.title("체험웹 자동 배포 시스템 v2.4")
 
-        # ------------------------------------------
-        # 프로그램 정보
-        # ------------------------------------------
-        self.version = "v3.0"
+        # 기본 창
+        self.root.geometry("1280x900")
+        self.root.minsize(1100, 760)
+        self.root.configure(bg="#EEF2F7")
 
-        # ------------------------------------------
-        # 내부 데이터
-        # ------------------------------------------
+        # ---------------------------------------
+        # 내부 변수
+        # ---------------------------------------
+
         self.selected_files = []
         self.excel_path = ""
 
         self.ftp_user = ""
         self.ftp_pass = ""
-        self.remote_root = ""
 
+        self.remote_root = ""
         self.log_file_path = None
 
-        self.total_files = 0
-        self.success_count = 0
-        self.fail_count = 0
+        # ---------------------------------------
+        # ttk Style
+        # ---------------------------------------
 
-        self.current_filename = ""
-        self.current_path = ""
-
-        self.start_time = None
-
-        # ------------------------------------------
-        # 스타일
-        # ------------------------------------------
         self.style = Style()
         self.style.theme_use("clam")
 
+        # 전체 배경
         self.style.configure(
             ".",
-            background="#F3F4F6",
-            foreground="#1F2937",
-            font=("맑은 고딕", 9)
+            background="#EEF2F7"
         )
 
+        # 카드 느낌 Treeview
         self.style.configure(
             "Treeview",
             background="#FFFFFF",
             fieldbackground="#FFFFFF",
-            foreground="#1D1D1F",
-            rowheight=38,
-            font=("맑은 고딕", 10),
+            foreground="#222222",
+            rowheight=34,
             borderwidth=0,
-            relief="flat"
+            relief="flat",
+            font=("맑은 고딕",10)
         )
 
         self.style.configure(
             "Treeview.Heading",
-            background="#F9FAFB",
-            foreground="#6B7280",
-            font=("맑은 고딕", 10, "bold"),
-            borderwidth=0,
+            background="#F7F8FA",
+            foreground="#222222",
             relief="flat",
-            padding=(0, 12)
+            borderwidth=0,
+            font=("맑은 고딕",10,"bold")
         )
 
         self.style.map(
             "Treeview",
-            background=[("selected", "#EAF2FF")],
-            foreground=[("selected", "#1D1D1F")]
+            background=[("selected","#E7F0FF")],
+            foreground=[("selected","#2563EB")]
         )
 
+        # Progress
         self.style.configure(
             "Blue.Horizontal.TProgressbar",
             troughcolor="#E5E7EB",
             background="#2563EB",
-            thickness=14,
-            borderwidth=0
+            borderwidth=0,
+            thickness=12
         )
 
-        self.button_font = ("맑은 고딕", 9)
+        # Card 공통 색상
+        self.card_bg = "#FFFFFF"
+        self.window_bg = "#EEF2F7"
+        self.primary = "#2563EB"
+        self.success = "#10B981"
+        self.danger = "#EF4444"
+        self.gray = "#6B7280"
 
-        try:
-            self.log_font = ("D2Coding", 10)
-        except Exception:
-            self.log_font = ("Consolas", 10)
+        self.create_widgets()
+        self.initialize_config_and_logs()
 
         self.create_widgets()
 
@@ -149,106 +143,157 @@ class DeploymentToolApp:
 
         self.main_frame = Frame(
             self.root,
-            bg="#F3F4F6",
+            bg=self.window_bg
         )
-        self.main_frame.pack(fill=BOTH, expand=True, padx=24, pady=20)
+
+        self.main_frame.pack(
+            fill=BOTH,
+            expand=True,
+            padx=24,
+            pady=24
+        )
+
+        # 반응형 Grid
+        self.main_frame.grid_rowconfigure(2, weight=1)
+        self.main_frame.grid_rowconfigure(5, weight=1)
+
+        self.main_frame.grid_columnconfigure(0, weight=3)
+        self.main_frame.grid_columnconfigure(1, weight=2)
 
         # =====================================================
-        # 프로그램 헤더
+        # Header Card
         # =====================================================
 
-        self.header_frame = Frame(
+        self.header_card = Frame(
             self.main_frame,
-            bg="#FFFFFF",
-            bd=0,
-            relief="flat"
+            bg=self.card_bg,
+            highlightbackground="#DDDDDD",
+            highlightthickness=1
         )
-        self.header_frame.pack(fill="x", pady=(0, 16))
+
+        self.header_card.grid(
+            row=0,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(0,18)
+        )
 
         self.label_program = Label(
-            self.header_frame,
-            text="HTML 자동 배포 시스템",
-            font=("맑은 고딕", 20, "bold"),
-            fg="#1F2937",
-            bg="#FFFFFF"
+            self.header_card,
+            text="🚀 체험웹 자동 배포 시스템",
+            font=("맑은 고딕",18,"bold"),
+            fg="#111827",
+            bg=self.card_bg
         )
-        self.label_program.pack(anchor="w", padx=20, pady=(16, 2))
+
+        self.label_program.pack(
+            anchor="w",
+            padx=28,
+            pady=(22,4)
+        )
 
         self.label_version = Label(
-            self.header_frame,
-            text="MILKT Internal Deployment Tool",
-            font=("맑은 고딕", 10),
-            fg="#8E8E93",
-            bg="#FFFFFF"
+            self.header_card,
+            text="AI Deployment Tool 2.4",
+            font=("맑은 고딕",10),
+            fg="#6B7280",
+            bg=self.card_bg
         )
-        self.label_version.pack(anchor="w", padx=20, pady=(0, 16))
+
+        self.label_version.pack(
+            anchor="w",
+            padx=28,
+            pady=(0,18)
+        )
 
         # =====================================================
-        # 진행상황 카드
+        # Progress Card
         # =====================================================
 
         self.progress_card = Frame(
             self.main_frame,
-            bg="#FFFFFF",
-            bd=0,
-            relief="flat"
+            bg=self.card_bg,
+            highlightbackground="#DDDDDD",
+            highlightthickness=1
         )
-        self.progress_card.pack(fill="x", pady=(0, 18))
+
+        self.progress_card.grid(
+            row=1,
+            column=0,
+            columnspan=2,
+            sticky="ew",
+            pady=(0,18)
+        )
 
         self.label_progress = Label(
             self.progress_card,
             text="대기 중",
-            font=("맑은 고딕", 13, "bold"),
-            fg="#111827",
-            bg="#FFFFFF"
+            font=("맑은 고딕",12,"bold"),
+            fg=self.primary,
+            bg=self.card_bg
         )
-        self.label_progress.pack(anchor="w", padx=20, pady=(16, 2))
+
+        self.label_progress.pack(
+            anchor="w",
+            padx=24,
+            pady=(18,4)
+        )
 
         self.label_current_file = Label(
             self.progress_card,
-            text="현재 작업 : 없음",
-            font=("맑은 고딕", 10),
-            fg="#4B5563",
-            bg="#FFFFFF"
+            text="현재 파일 : -",
+            font=("맑은 고딕",10),
+            fg="#555555",
+            bg=self.card_bg
         )
-        self.label_current_file.pack(anchor="w", padx=20)
+
+        self.label_current_file.pack(
+            anchor="w",
+            padx=24
+        )
 
         self.label_current_path = Label(
             self.progress_card,
             text="",
-            font=("Consolas", 9),
-            fg="#9AA0A6",
-            bg="#FFFFFF"
+            font=("Consolas",9),
+            fg="#9CA3AF",
+            bg=self.card_bg
         )
-        self.label_current_path.pack(anchor="w", padx=20, pady=(0, 10))
-    
-        self.label_count = Label(
-            self.progress_card,
-            text="진행 : 0 / 0",
-            font=("맑은 고딕", 10),
-            fg="#6B7280",
-            bg="#FFFFFF"
+
+        self.label_current_path.pack(
+            anchor="w",
+            padx=24,
+            pady=(2,10)
         )
-        self.label_count.pack(anchor="e", padx=20, pady=(0, 10))
 
         self.progress_bar = Progressbar(
             self.progress_card,
+            style="Blue.Horizontal.TProgressbar",
             orient="horizontal",
-            mode="determinate",
-            style="Blue.Horizontal.TProgressbar"
+            mode="determinate"
         )
-        self.progress_bar.pack(fill="x", padx=20)
+
+        self.progress_bar.pack(
+            fill="x",
+            padx=24
+        )
 
         self.progress_bar["value"] = 0
 
         self.label_percent = Label(
             self.progress_card,
             text="0 %",
-            font=("맑은 고딕", 12, "bold"),
-            fg="#111827",
-            bg="#FFFFFF"
+            font=("맑은 고딕",11,"bold"),
+            fg=self.primary,
+            bg=self.card_bg
         )
-        self.label_percent.pack(anchor="e", padx=20, pady=(6, 16))
+
+        self.label_percent.pack(
+            anchor="e",
+            padx=24,
+            pady=(8,18)
+        )
 
         # =====================================================
         # ZIP 파일 카드
